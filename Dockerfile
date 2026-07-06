@@ -19,6 +19,15 @@ RUN composer install \
 # ---- Stage 2: runtime image (php-fpm + nginx in a single container) --------
 FROM php:7.1-fpm
 
+# php:7.1-fpm's Debian release is EOL; its main mirrors are gone, so point
+# apt at the archive (and stop requiring a live Release "Valid-Until",
+# which archived snapshots don't refresh).
+RUN sed -i \
+        -e 's|deb.debian.org|archive.debian.org|g' \
+        -e 's|security.debian.org|archive.debian.org/debian-security|g' \
+        /etc/apt/sources.list \
+    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
         nginx \
         libzip-dev \
