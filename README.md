@@ -52,6 +52,33 @@ We would like to extend our thanks to the following sponsors for helping fund on
 - [Earthlink](https://www.earthlink.ro/)
 - [Steadfast Collective](https://steadfastcollective.com/)
 
+## Running with Docker
+
+This app targets PHP ^7.1.3 / Laravel 5.6, so the provided `Dockerfile` builds
+its own `php:7.1-fpm` + nginx image rather than relying on the host's PHP.
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+The `app` container's entrypoint waits for MySQL, generates `APP_KEY` on
+first boot if unset, runs migrations, links `storage`, and caches config
+before starting php-fpm/nginx. The site is then available at
+`http://localhost:8080` (override with `APP_PORT`).
+
+Services: `app` (php-fpm + nginx), `mysql`, `redis`, `memcached`. Override any
+default (DB credentials, `APP_URL`, mail settings, ...) via a `.env` file in
+the project root — `docker compose` reads it automatically for variable
+substitution in `docker-compose.yml`.
+
+Demo data (cities, objects, rooms, roles, a sample user, ...) is available via
+the bundled seeders:
+
+```bash
+docker compose exec app php artisan db:seed
+```
+
 ## Contributing
 
 Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).

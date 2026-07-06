@@ -185,7 +185,9 @@ class BackendGateway {
 
         $memcache = new \Memcached();
 
-        if (!$memcache->addServer('localhost', 11211))
+        $server = config('cache.stores.memcached.servers.0');
+
+        if (!$memcache->addServer($server['host'], $server['port']))
         {
             throw new \RuntimeException('Could not connect to Memcached');
         }
