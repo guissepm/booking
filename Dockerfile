@@ -5,9 +5,28 @@
 # ---- Stage 1: install PHP dependencies with Composer -----------------------
 # Composer 2 rewrote vendor/composer/installed.json to a new schema that
 # Laravel 5.6's PackageManifest can't parse ("Undefined index: name" at
-# runtime, same issue fixed for CI in .github/workflows/laravel.yml).
-# Composer 1 produces the flat-array format this Laravel version expects.
-FROM composer:1 AS vendor
+# runtime, same issue fixed for CI in .github/workflows/laravel.yml), so we
+# need Composer 1. The docker.io/library/composer:1 image turned out to
+# bundle a modern PHP (8.4) that Composer 1's own code doesn't support
+# (fatal TypeError in stream_context_create()), so install Composer 1
+# ourselves on a PHP version it actually works with instead.
+FROM php:7.3-cli AS vendor
+
+RUN sed -i \
+        -e 's|deb.debian.org|archive.debian.org|g' \
+        -e 's|security.debian.org|archive.debian.org|g' \
+        /etc/apt/sources.list \
+    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        libzip-dev \
+    && docker-php-ext-install zip \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+    && php composer-setup.php --version=1.10.27 --install-dir=/usr/local/bin --filename=composer \
+    && php -r "unlink('composer-setup.php');"
 
 WORKDIR /app
 
