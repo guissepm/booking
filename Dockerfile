@@ -3,7 +3,11 @@
 # than the newer PHP available on the host.
 
 # ---- Stage 1: install PHP dependencies with Composer -----------------------
-FROM composer:2.7 AS vendor
+# Composer 2 rewrote vendor/composer/installed.json to a new schema that
+# Laravel 5.6's PackageManifest can't parse ("Undefined index: name" at
+# runtime, same issue fixed for CI in .github/workflows/laravel.yml).
+# Composer 1 produces the flat-array format this Laravel version expects.
+FROM composer:1 AS vendor
 
 WORKDIR /app
 
