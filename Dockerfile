@@ -37,8 +37,11 @@ WORKDIR /app
 
 COPY . .
 
+# Dev dependencies are kept (no --no-dev): database/seeds/*.php (the
+# demo data every seeder relies on) requires fzaninotto/faker, which is
+# only declared in require-dev. This is a local/demo image, not a
+# hardened production build.
 RUN composer install \
-        --no-dev \
         --optimize-autoloader \
         --ignore-platform-reqs \
         --prefer-dist \
