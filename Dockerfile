@@ -55,7 +55,8 @@ COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/php/local.ini /usr/local/etc/php/conf.d/local.ini
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN chmod +x /usr/local/bin/entrypoint.sh \
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh \
+    && chmod +x /usr/local/bin/entrypoint.sh \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/public bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
