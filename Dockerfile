@@ -14,7 +14,8 @@ RUN composer install \
         --optimize-autoloader \
         --ignore-platform-reqs \
         --prefer-dist \
-        --no-interaction
+        --no-interaction \
+        --no-scripts
 
 # ---- Stage 2: runtime image (php-fpm + nginx in a single container) --------
 FROM php:7.1-fpm
