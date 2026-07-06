@@ -7,11 +7,13 @@ storage/framework/sessions/*
 storage/framework/views/*
 storage/logs/*
 storage/app/public/*
+bootstrap/cache/*
 !storage/framework/cache/.gitignore
 !storage/framework/sessions/.gitignore
 !storage/framework/views/.gitignore
 !storage/logs/.gitignore
 !storage/app/public/.gitignore
+!bootstrap/cache/.gitignore
 .env
 .env.*
 !.env.example
