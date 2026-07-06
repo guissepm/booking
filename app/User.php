@@ -11,9 +11,7 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
     use Notifiable;
     use Enjoythetrip\Presenters\UserPresenter;
 
-    public static $roles = []; 
-
-
+    protected $roleCache = [];
 
     /**
      * The attributes that are mass assignable.
@@ -94,22 +92,22 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
 
         foreach($roles as $role)
         {
-            
-            if(isset(self::$roles[$role])) 
+
+            if(isset($this->roleCache[$role]))
             {
-                if(self::$roles[$role])  return true;
+                if($this->roleCache[$role])  return true;
 
             }
             else
             {
-                self::$roles[$role] = $this->roles()->where('name', $role)->exists();
-                if(self::$roles[$role]) return true;
+                $this->roleCache[$role] = $this->roles()->where('name', $role)->exists();
+                if($this->roleCache[$role]) return true;
             }
-            
+
         }
-        
+
 
         return false;
- 
+
     }
 }

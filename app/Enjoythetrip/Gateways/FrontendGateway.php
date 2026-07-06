@@ -103,9 +103,10 @@ class FrontendGateway {
     public function addComment($commentable_id, $type, $request)
     {
         $this->validate($request,[
-            'content'=>"required|string"
+            'content'=>"required|string",
+            'rating'=>"nullable|integer|between:1,5",
         ]);
-        
+
         return $this->fR->addComment($commentable_id, $type, $request);
     }
 

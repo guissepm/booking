@@ -2,8 +2,9 @@
 
 namespace App\Enjoythetrip\Repositories; 
 
-use App\Enjoythetrip\Interfaces\BackendRepositoryInterface;  
+use App\Enjoythetrip\Interfaces\BackendRepositoryInterface;
 use App\{TouristObject,Reservation,City,User,Photo,Address,Article,Room,Notification};
+use Illuminate\Support\Facades\Auth;
 
 /* Lecture 27 */
 class BackendRepository implements BackendRepositoryInterface  {   
@@ -60,11 +61,19 @@ class BackendRepository implements BackendRepositoryInterface  {
     /* L30 */
     public function getReservationData($request)
     {
-        return  Reservation::with('user', 'room')
+        $query = Reservation::with('user', 'room')
                 ->where('room_id', $request->input('room_id'))
                 ->where('day_in', '<=', date('Y-m-d', strtotime($request->input('date'))))
-                ->where('day_out', '>=', date('Y-m-d', strtotime($request->input('date'))))
-                ->first();
+                ->where('day_out', '>=', date('Y-m-d', strtotime($request->input('date'))));
+
+        if (!$request->user()->hasRole(['admin']))
+        {
+            $query->whereHas('room.object', function ($q) use ($request) {
+                $q->where('user_id', $request->user()->id);
+            });
+        }
+
+        return $query->first();
     }
     
     
@@ -337,6 +346,7 @@ class BackendRepository implements BackendRepositoryInterface  {
     public function setReadNotifications($request)
     {
        return Notification::where('id', $request->input('id'))
+                        ->where('user_id', $request->user()->id)
                         ->update(['status' => 1]);
     }
 
@@ -351,6 +361,7 @@ class BackendRepository implements BackendRepositoryInterface  {
     public function setShownNotifications($request)
     {
         return Notification::whereIn('id', $request->input('idsOfNotShownNotifications'))
+                        ->where('user_id', $request->user()->id)
                         ->update(['shown' => 1]);
     }
 

@@ -66,36 +66,48 @@ class FrontendRepository  implements FrontendRepositoryInterface  {
         return  User::with(['objects','larticles','comments.commentable'])->find($id);
     }
 
+    /* Types the client is allowed to reference by name in like/unlike/addComment routes. */
+    const LIKEABLE_TYPES = ['App\TouristObject', 'App\Article'];
+
     /* L24 */
     public function like($likeable_id, $type, $request)
     {
-        $likeable = $type::find($likeable_id);
-      
+        $likeable = $this->resolveLikeable($type)::find($likeable_id);
+
         return $likeable->users()->attach($request->user()->id);
     }
-    
+
     /* L24 */
     public function unlike($likeable_id, $type, $request)
     {
-        $likeable = $type::find($likeable_id);
-      
+        $likeable = $this->resolveLikeable($type)::find($likeable_id);
+
         return $likeable->users()->detach($request->user()->id);
     }
-    
-    
+
+    private function resolveLikeable($type)
+    {
+        if (!in_array($type, self::LIKEABLE_TYPES, true))
+        {
+            abort(404);
+        }
+
+        return $type;
+    }
+
     /* L25 */
     public function addComment($commentable_id, $type, $request)
     {
-        $commentable = $type::find($commentable_id);
-        
+        $commentable = $this->resolveLikeable($type)::find($commentable_id);
+
         $comment = new Comment;
- 
+
         $comment->content = $request->input('content');
 
         $comment->rating = $type == 'App\TouristObject' ? $request->input('rating') : 0;
 
         $comment->user_id = $request->user()->id;
-        
+
         return $commentable->comments()->save($comment);
     }
 

@@ -80,8 +80,7 @@ class FrontendController extends Controller
     
         if($city = $this->fG->getSearchResults($request))
         {
-            dd($city);
-            return $this->makeResponse('frontend.roomsearch',compact('city')); 
+            return $this->makeResponse('frontend.roomsearch',compact('city'));
         }
         else 
         {
