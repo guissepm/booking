@@ -68,8 +68,11 @@ class BackendRepository implements BackendRepositoryInterface  {
 
         if (!$request->user()->hasRole(['admin']))
         {
-            $query->whereHas('room.object', function ($q) use ($request) {
-                $q->where('user_id', $request->user()->id);
+            $query->where(function ($q) use ($request) {
+                $q->where('user_id', $request->user()->id)
+                  ->orWhereHas('room.object', function ($q2) use ($request) {
+                      $q2->where('user_id', $request->user()->id);
+                  });
             });
         }
 
