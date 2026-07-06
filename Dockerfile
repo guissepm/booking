@@ -1,6 +1,11 @@
 # Enjoythetrip runs on Laravel 5.6 / PHP ^7.1.3 (see composer.json). This
-# image intentionally targets php:7.1-fpm to match that requirement rather
-# than the newer PHP available on the host.
+# image intentionally targets an old PHP 7.x to match that requirement
+# rather than the newer PHP available on the host. 7.3 rather than 7.1:
+# the code itself uses a trailing comma in a group `use` statement
+# (app/Enjoythetrip/Repositories/FrontendRepository.php), only valid
+# since PHP 7.2 — composer.json's declared floor doesn't actually match
+# what the source needs to parse. 7.3 still satisfies composer.json's
+# ^7.1.3 constraint.
 
 # ---- Stage 1: install PHP dependencies with Composer -----------------------
 # Composer 2 rewrote vendor/composer/installed.json to a new schema that
@@ -41,11 +46,11 @@ RUN composer install \
         --no-scripts
 
 # ---- Stage 2: runtime image (php-fpm + nginx in a single container) --------
-FROM php:7.1-fpm
+FROM php:7.3-fpm
 
-# php:7.1-fpm's Debian release is EOL; its main mirrors are gone, so point
-# apt at the archive (and stop requiring a live Release "Valid-Until",
-# which archived snapshots don't refresh).
+# This Debian release is EOL; its main mirrors are gone, so point apt at
+# the archive (and stop requiring a live Release "Valid-Until", which
+# archived snapshots don't refresh).
 RUN sed -i \
         -e 's|deb.debian.org|archive.debian.org|g' \
         -e '/security.debian.org/d' \
