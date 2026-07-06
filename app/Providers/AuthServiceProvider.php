@@ -17,7 +17,8 @@ class AuthServiceProvider extends ServiceProvider
         'App\Reservation' => 'App\Policies\ReservationPolicy', /* L35 */
         'App\Photo' => 'App\Policies\PhotoPolicy', /* L39 */
         'App\TouristObject' => 'App\Policies\ObjectPolicy', /* L43 */
-        'App\Article' => 'App\Policies\ArticlePolicy' /* L45 */
+        'App\Article' => 'App\Policies\ArticlePolicy', /* L45 */
+        'App\Room' => 'App\Policies\RoomPolicy' /* L47 */
     ];
 
     /**

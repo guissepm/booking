@@ -2,8 +2,7 @@
 
 namespace App\Policies;
 
-use App\User;
-use App\{User,Reservation}; 
+use App\{User,Reservation};
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class ReservationPolicy
