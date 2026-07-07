@@ -17,7 +17,10 @@ if [ -n "$DB_HOST" ]; then
 fi
 
 if [ -z "$APP_KEY" ]; then
-    php artisan key:generate --force
+    echo "WARNING: APP_KEY is not set. Generating a throwaway one for this container run only."
+    echo "Existing encrypted cookies/sessions will be invalidated on every restart until you"
+    echo "set a permanent APP_KEY (generate one with: php artisan key:generate --show)."
+    export APP_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
 fi
 
 php artisan storage:link || true
