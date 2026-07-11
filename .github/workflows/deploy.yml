@@ -23,6 +23,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # For workflow_run, the default checkout uses the default branch tip,
+          # which may be a newer, unverified commit than the one CI validated.
+          # Pin to the SHA that triggered CI; fall back to the ref for dispatch.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -96,7 +101,11 @@ jobs:
             cd "$RELEASE"
             php artisan migrate --force
             php artisan config:cache
-            php artisan route:cache
+            # Route caching aborts in Laravel 5.6 if any route uses a Closure
+            # (e.g. the default /user route in routes/api.php). Fall back to
+            # clearing the cache so a non-cacheable route table can't fail the
+            # deploy; the app then loads routes normally at runtime.
+            php artisan route:cache || php artisan route:clear
 
             # Atomically flip the "current" symlink to the new release.
             ln -sfn "$RELEASE" "$APP_PATH/current"
