@@ -1,0 +1,104 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & deploy to production
+    runs-on: ubuntu-latest
+    environment: production
+
+    # Deploy only when CI succeeded, or when triggered manually.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.2"
+          extensions: mbstring, dom, fileinfo, mysql, pdo_mysql, bcmath, json, tokenizer, xml, ctype
+          coverage: none
+
+      - name: Install Composer dependencies (production)
+        run: composer install --no-interaction --prefer-dist --no-progress --no-dev --optimize-autoloader
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "14"
+          cache: "npm"
+
+      - name: Build production assets
+        run: |
+          npm ci || npm install
+          npm run production
+
+      - name: Create deployment archive
+        run: |
+          tar \
+            --exclude='./.git' \
+            --exclude='./.github' \
+            --exclude='./node_modules' \
+            --exclude='./tests' \
+            --exclude='./.env' \
+            --exclude='./storage/logs/*' \
+            -czf deploy.tar.gz .
+
+      - name: Upload archive to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          source: "deploy.tar.gz"
+          target: "${{ secrets.DEPLOY_PATH }}/incoming"
+
+      - name: Release & run post-deploy tasks
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script: |
+            set -euo pipefail
+            APP_PATH="${{ secrets.DEPLOY_PATH }}"
+            RELEASE="$APP_PATH/releases/$(date +%Y%m%d%H%M%S)"
+
+            # Unpack the new release.
+            mkdir -p "$RELEASE"
+            tar -xzf "$APP_PATH/incoming/deploy.tar.gz" -C "$RELEASE"
+            rm -f "$APP_PATH/incoming/deploy.tar.gz"
+
+            # Link shared, persistent state (env + storage) into the release.
+            ln -sfn "$APP_PATH/shared/.env" "$RELEASE/.env"
+            rm -rf "$RELEASE/storage"
+            ln -sfn "$APP_PATH/shared/storage" "$RELEASE/storage"
+
+            cd "$RELEASE"
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+
+            # Atomically flip the "current" symlink to the new release.
+            ln -sfn "$RELEASE" "$APP_PATH/current"
+
+            # Reload PHP-FPM so the new code is served (ignored if not permitted).
+            sudo systemctl reload php7.2-fpm 2>/dev/null || true
+
+            # Keep only the 5 most recent releases.
+            cd "$APP_PATH/releases"
+            ls -1dt */ | tail -n +6 | xargs -r rm -rf
