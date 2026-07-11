@@ -46,6 +46,9 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring, dom, fileinfo, mysql, pdo_mysql, bcmath, json, tokenizer, xml, ctype
+          # Laravel 5.6's PackageManifest can't parse Composer 2's installed.json
+          # ("Undefined index: name"), so pin Composer 1.
+          tools: composer:v1
           coverage: none
 
       - name: Copy environment file
@@ -93,7 +96,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "14"
+          # node-sass 4.9.4 (via laravel-mix 2) only ships prebuilt binaries up
+          # to Node 10; newer Node forces a source build that fails.
+          node-version: "10"
           cache: "npm"
 
       - name: Install Node dependencies
