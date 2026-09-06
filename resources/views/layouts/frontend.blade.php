@@ -58,6 +58,7 @@
                         <li><p class="navbar-text">Logged in as:</p></li>
                         <li><p class="navbar-text">{{ Auth::user()->name }}</p></li> 
                         <li><a href="{{ route('adminHome') }}">admin</a></li>
+                        <li><a href="{{ route('inbox') }}">messages</a></li>
                         <li>
                         <a class="dropdown-item" href="{{ route('logout') }}"
                                        onclick="event.preventDefault();

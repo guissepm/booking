@@ -86,6 +86,24 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
     {
         return $this->belongsToMany('App\Role');
     }
+
+    /* Reviews other users (guests or hosts) left about this user's stays */
+    public function reviewsReceived()
+    {
+        return $this->hasMany('App\Review', 'recipient_id');
+    }
+
+    /* Reviews this user wrote about a stay */
+    public function reviewsWritten()
+    {
+        return $this->hasMany('App\Review', 'author_id');
+    }
+
+    /* Conversations this user started as a guest inquiring about a property */
+    public function conversationsAsGuest()
+    {
+        return $this->hasMany('App\Conversation', 'guest_id');
+    }
     
     
     /* L27 */

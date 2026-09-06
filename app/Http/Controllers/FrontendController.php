@@ -18,7 +18,7 @@ class FrontendController extends Controller
     public function __construct(FrontendRepositoryInterface $frontendRepository, FrontendGateway $frontendGateway)
     {
         /* L24,60*/
-        $this->middleware($this->setMiddleware())->only(['makeReservation','addComment','like','unlike']); 
+        $this->middleware($this->setMiddleware())->only(['makeReservation','addComment','like','unlike','addReview','startConversation','inbox','showConversation','postMessage']);
 
         $this->fR = $frontendRepository;
         $this->fG = $frontendGateway; 
@@ -158,17 +158,78 @@ class FrontendController extends Controller
         }
         else
         {
-            event( new OrderPlacedEvent($reservation) ); /* L54 */
-
             if (!$request->ajax())
-            return redirect()->route('adminHome');
-            else
+            return redirect()->route('checkout', ['reservation_id' => $reservation->id]);
+
+            // Mobile/AJAX clients aren't wired up to the Stripe Checkout
+            // redirect flow below, so preserve the previous behaviour for
+            // them: the reservation is created unpaid and the host is
+            // notified immediately, same as before payment existed.
+            event( new OrderPlacedEvent($reservation) ); /* L54 */
             return response()->json(['reservation'=>$reservation]);
         }
 
     }
-    
-    
+
+    public function addReview($reservation_id, Request $request)
+    {
+        $review = $this->fG->addReview($reservation_id, $request);
+
+        if (!$review)
+        {
+            $request->session()->flash('reviewMsg', __('This reservation cannot be reviewed'));
+            return redirect()->back();
+        }
+
+        Cache::flush();
+
+        $request->session()->flash('reviewMsg', __('Review submitted'));
+        return redirect()->back();
+    }
+
+    public function startConversation($object_id, Request $request)
+    {
+        $conversation = $this->fG->startConversation($object_id, $request);
+
+        if (!$conversation)
+        {
+            $request->session()->flash('messageMsg', __('This message could not be sent'));
+            return redirect()->back();
+        }
+
+        return redirect()->route('showConversation', ['conversation_id' => $conversation->id]);
+    }
+
+    public function inbox(Request $request)
+    {
+        $conversations = $this->fG->getInbox($request);
+
+        return $this->makeResponse('frontend.inbox', compact('conversations'));
+    }
+
+    public function showConversation($conversation_id, Request $request)
+    {
+        $conversation = $this->fG->getConversation($conversation_id, $request);
+
+        if (!$conversation)
+        {
+            abort(404);
+        }
+
+        return $this->makeResponse('frontend.conversation', compact('conversation'));
+    }
+
+    public function postMessage($conversation_id, Request $request)
+    {
+        $message = $this->fG->postMessage($conversation_id, $request);
+
+        if (!$message)
+        {
+            abort(404);
+        }
+
+        return redirect()->route('showConversation', ['conversation_id' => $conversation_id]);
+    }
 }
 
  

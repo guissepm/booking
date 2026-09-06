@@ -120,8 +120,44 @@ class FrontendGateway {
 
         return $this->fR->makeReservation($room_id, $city_id, $request);
     }
-    
-    
+
+    public function addReview($reservation_id, $request)
+    {
+        $this->validate($request,[
+            'content'=>"required|string",
+            'rating'=>"required|integer|between:1,5",
+        ]);
+
+        return $this->fR->addReview($reservation_id, $request);
+    }
+
+    public function startConversation($object_id, $request)
+    {
+        $this->validate($request,[
+            'content'=>"required|string",
+        ]);
+
+        return $this->fR->startConversation($object_id, $request);
+    }
+
+    public function getInbox($request)
+    {
+        return $this->fR->getInbox($request);
+    }
+
+    public function getConversation($conversation_id, $request)
+    {
+        return $this->fR->getConversation($conversation_id, $request);
+    }
+
+    public function postMessage($conversation_id, $request)
+    {
+        $this->validate($request,[
+            'content'=>"required|string",
+        ]);
+
+        return $this->fR->postMessage($conversation_id, $request);
+    }
 }
 
 

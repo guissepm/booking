@@ -10,7 +10,7 @@
 
 @foreach( $objects as $o=>$object ) <!-- Lecture 29 -->
 
-@php ( $o++ ) <!-- Lecture 29 -->
+@php $o++; @endphp <!-- Lecture 29 -->
     <h3 class="red">{{ $object->name /* Lecture 29 */ }} object</h3>
 
 
@@ -137,6 +137,60 @@
         </div>
 
         <hr>
+
+        @php
+            $pastReservations = $room->reservations->filter(function ($reservation) {
+                return $reservation->status && $reservation->day_out < date('Y-m-d');
+            });
+        @endphp
+
+        @if ($pastReservations->isNotEmpty())
+        <h5>Past stays</h5>
+        @foreach ($pastReservations as $reservation)
+            @php
+                $myReview = $reservation->reviews->firstWhere('author_id', Auth::id());
+                $isGuest = Auth::id() == $reservation->user_id;
+                $otherPartyName = $isGuest ? $object->user->name : optional($reservation->user)->name;
+            @endphp
+            <div class="well well-sm">
+                <p>
+                    <strong>{{ $reservation->day_in }} &ndash; {{ $reservation->day_out }}</strong>
+                    with {{ $otherPartyName }}
+                </p>
+
+                @foreach ($reservation->reviews as $review)
+                    <p>
+                        <em>{{ $review->author->name }}</em> rated {{ $review->rating }}/5:
+                        {{ $review->content }}
+                    </p>
+                @endforeach
+
+                @if (session('reviewMsg'))
+                    <p class="text-info">{{ session('reviewMsg') }}</p>
+                @endif
+
+                @if (!$myReview)
+                <form method="POST" action="{{ route('addReview', ['reservation_id' => $reservation->id]) }}">
+                    @csrf
+                    <div class="form-group">
+                        <label>Rate this stay</label>
+                        <select name="rating" class="form-control" style="width:auto;display:inline-block;" required>
+                            <option value="5">5</option>
+                            <option value="4">4</option>
+                            <option value="3">3</option>
+                            <option value="2">2</option>
+                            <option value="1">1</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <textarea name="content" class="form-control" placeholder="Leave a review" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-xs">Submit review</button>
+                </form>
+                @endif
+            </div>
+        @endforeach
+        @endif
 
     @endforeach <!-- Lecture 29 -->
 

@@ -3,11 +3,20 @@
 namespace App\Enjoythetrip\Repositories; 
 
 use App\Enjoythetrip\Interfaces\BackendRepositoryInterface;
+use App\Enjoythetrip\Payments\StripeGateway;
 use App\{TouristObject,Reservation,City,User,Photo,Address,Article,Room,Notification};
 use Illuminate\Support\Facades\Auth;
 
 /* Lecture 27 */
-class BackendRepository implements BackendRepositoryInterface  {   
+class BackendRepository implements BackendRepositoryInterface  {
+
+    private $stripe;
+
+    public function __construct(StripeGateway $stripe)
+    {
+        $this->stripe = $stripe;
+    }
+
     
     
     /* Lecture 28 */
@@ -19,7 +28,8 @@ class BackendRepository implements BackendRepositoryInterface  {
                         $q->has('reservations'); // works like where clause for Room
                     }, // give me rooms only with reservations, if it wasn't there would be rooms without reservations
 
-                    'rooms.reservations.user'
+                    'rooms.reservations.user',
+                    'rooms.reservations.reviews.author'
 
                   ])
                     ->has('rooms.reservations') // ensures that it gives me only those objects that have at least one reservation, has() here works like where clause for Object
@@ -46,7 +56,8 @@ class BackendRepository implements BackendRepositoryInterface  {
                         });
                     },
                     
-                    'rooms.reservations.user'
+                    'rooms.reservations.user',
+                    'rooms.reservations.reviews.author'
 
                   ])
 
@@ -90,13 +101,28 @@ class BackendRepository implements BackendRepositoryInterface  {
     /* L35 */
     public function deleteReservation(Reservation $reservation)
     {
+        if ($reservation->paid_at)
+        {
+            $this->stripe->refund($reservation->stripe_payment_intent_id);
+        }
+
         return $reservation->delete();
     }
     
     
     /* L35 */
+    /* A reservation can only be confirmed once it's actually been paid for -
+       otherwise a host could confirm (and a guest could then stay in) a
+       booking nobody ever paid for, whether that's a web reservation whose
+       Stripe webhook hasn't landed yet or an AJAX/mobile one that was never
+       routed through Checkout at all. */
     public function confirmReservation(Reservation $reservation)
     {
+        if (!$reservation->paid_at)
+        {
+            return false;
+        }
+
         return $reservation->update(['status' => true]);
     }
     
