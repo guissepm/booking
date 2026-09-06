@@ -172,18 +172,26 @@ class BackendController extends Controller
     /* L33,35 */
     public function confirmReservation($id)
     {
-        $reservation = $this->bR->getReservation($id); 
+        $reservation = $this->bR->getReservation($id);
 
-        $this->authorize('reservation', $reservation); 
-        
-        $this->bR->confirmReservation($reservation); 
-        
-        $this->flashMsg ('success', __('Reservation has been confirmed'));  
-        
-        event( new ReservationConfirmedEvent($reservation) ); 
-        
-        if (!\Request::ajax()) 
-        return redirect()->back(); 
+        $this->authorize('reservation', $reservation);
+
+        if (!$this->bR->confirmReservation($reservation))
+        {
+            $this->flashMsg('danger', __('This reservation has not been paid for yet'));
+
+            if (!\Request::ajax())
+            return redirect()->back();
+
+            return;
+        }
+
+        $this->flashMsg ('success', __('Reservation has been confirmed'));
+
+        event( new ReservationConfirmedEvent($reservation) );
+
+        if (!\Request::ajax())
+        return redirect()->back();
     }
 
     

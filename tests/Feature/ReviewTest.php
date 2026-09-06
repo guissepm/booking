@@ -139,4 +139,22 @@ class ReviewTest extends TestCase
 
         $this->assertSame(0, Review::count());
     }
+
+    public function testSubmittingAReviewInvalidatesTheCachedObjectPage()
+    {
+        [$reservation, $host, $guest] = $this->makePastReservation();
+        $object = $reservation->room->object;
+
+        // Prime the cache the same way a real visitor would, before the
+        // review exists.
+        $this->get(route('object', ['id' => $object->id]));
+
+        $this->actingAs($guest)->post(route('addReview', ['reservation_id' => $reservation->id]), [
+            'rating' => 5,
+            'content' => 'Loved this stay, unmistakably distinctive review text',
+        ]);
+
+        $response = $this->get(route('object', ['id' => $object->id]));
+        $response->assertSee('Loved this stay, unmistakably distinctive review text');
+    }
 }

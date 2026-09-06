@@ -54,6 +54,19 @@ class StripeGateway
         ]);
     }
 
+    public function retrieveSession($sessionId)
+    {
+        return $this->client()->checkout->sessions->retrieve($sessionId);
+    }
+
+    /* Called when a guest backs out of Checkout before paying, so a stale
+       tab still open on that session's payment page can't complete a
+       charge for a reservation we're about to delete. */
+    public function expireSession($sessionId)
+    {
+        return $this->client()->checkout->sessions->expire($sessionId);
+    }
+
     public function constructWebhookEvent($payload, $signature)
     {
         return Webhook::constructEvent($payload, $signature, config('services.stripe.webhook_secret'));

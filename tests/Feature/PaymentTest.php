@@ -148,11 +148,12 @@ class PaymentTest extends TestCase
     public function testWebhookMarksReservationPaidAndNotifiesHost()
     {
         Event::fake();
-        [$reservation, $host, $guest] = $this->makeReservation();
+        [$reservation, $host, $guest] = $this->makeReservation(['stripe_checkout_session_id' => 'cs_test_123']);
 
         $fakeEvent = (object) [
             'type' => 'checkout.session.completed',
             'data' => (object) ['object' => (object) [
+                'id' => 'cs_test_123',
                 'metadata' => (object) ['reservation_id' => $reservation->id],
                 'payment_intent' => 'pi_test_123',
             ]],
@@ -172,11 +173,12 @@ class PaymentTest extends TestCase
 
     public function testWebhookDeletesReservationOnExpiredSession()
     {
-        [$reservation, $host, $guest] = $this->makeReservation();
+        [$reservation, $host, $guest] = $this->makeReservation(['stripe_checkout_session_id' => 'cs_test_123']);
 
         $fakeEvent = (object) [
             'type' => 'checkout.session.expired',
             'data' => (object) ['object' => (object) [
+                'id' => 'cs_test_123',
                 'metadata' => (object) ['reservation_id' => $reservation->id],
             ]],
         ];
@@ -185,6 +187,77 @@ class PaymentTest extends TestCase
         $this->app->instance(StripeGateway::class, $mock);
 
         $this->postJson(route('stripeWebhook'), [], ['Stripe-Signature' => 'sig'])->assertStatus(200);
+
+        $this->assertNull(Reservation::find($reservation->id));
+    }
+
+    public function testWebhookIgnoresASupersededSession()
+    {
+        Event::fake();
+        // The reservation has since moved on to a newer checkout session
+        // (cs_new); an event about the older one (cs_stale) must not mark
+        // it paid or delete it.
+        [$reservation, $host, $guest] = $this->makeReservation(['stripe_checkout_session_id' => 'cs_new']);
+
+        $fakeEvent = (object) [
+            'type' => 'checkout.session.completed',
+            'data' => (object) ['object' => (object) [
+                'id' => 'cs_stale',
+                'metadata' => (object) ['reservation_id' => $reservation->id],
+                'payment_intent' => 'pi_test_999',
+            ]],
+        ];
+        $mock = Mockery::mock(StripeGateway::class);
+        $mock->shouldReceive('constructWebhookEvent')->once()->andReturn($fakeEvent);
+        $this->app->instance(StripeGateway::class, $mock);
+
+        $this->postJson(route('stripeWebhook'), [], ['Stripe-Signature' => 'sig'])->assertStatus(200);
+
+        $this->assertNull($reservation->fresh()->paid_at);
+        Event::assertNotDispatched(OrderPlacedEvent::class);
+    }
+
+    public function testCheckoutReusesAnOpenExistingSession()
+    {
+        [$reservation, $host, $guest] = $this->makeReservation(['stripe_checkout_session_id' => 'cs_existing']);
+
+        $existingSession = (object) ['id' => 'cs_existing', 'status' => 'open', 'url' => 'https://checkout.stripe.com/pay/cs_existing'];
+        $mock = Mockery::mock(StripeGateway::class);
+        $mock->shouldReceive('retrieveSession')->once()->with('cs_existing')->andReturn($existingSession);
+        $mock->shouldNotReceive('createCheckoutSession');
+        $this->app->instance(StripeGateway::class, $mock);
+
+        $response = $this->actingAs($guest)->get(route('checkout', ['reservation_id' => $reservation->id]));
+
+        $response->assertRedirect('https://checkout.stripe.com/pay/cs_existing');
+    }
+
+    public function testCheckoutCreatesANewSessionWhenTheExistingOneIsNoLongerOpen()
+    {
+        [$reservation, $host, $guest] = $this->makeReservation(['stripe_checkout_session_id' => 'cs_expired']);
+
+        $expiredSession = (object) ['id' => 'cs_expired', 'status' => 'expired'];
+        $freshSession = (object) ['id' => 'cs_fresh', 'url' => 'https://checkout.stripe.com/pay/cs_fresh'];
+        $mock = Mockery::mock(StripeGateway::class);
+        $mock->shouldReceive('retrieveSession')->once()->with('cs_expired')->andReturn($expiredSession);
+        $mock->shouldReceive('createCheckoutSession')->once()->andReturn($freshSession);
+        $this->app->instance(StripeGateway::class, $mock);
+
+        $response = $this->actingAs($guest)->get(route('checkout', ['reservation_id' => $reservation->id]));
+
+        $response->assertRedirect('https://checkout.stripe.com/pay/cs_fresh');
+        $this->assertSame('cs_fresh', $reservation->fresh()->stripe_checkout_session_id);
+    }
+
+    public function testCancelExpiresTheStripeSessionBeforeDeleting()
+    {
+        [$reservation, $host, $guest] = $this->makeReservation(['stripe_checkout_session_id' => 'cs_test_123']);
+
+        $mock = Mockery::mock(StripeGateway::class);
+        $mock->shouldReceive('expireSession')->once()->with('cs_test_123');
+        $this->app->instance(StripeGateway::class, $mock);
+
+        $this->actingAs($guest)->get(route('checkoutCancel', ['reservation_id' => $reservation->id]));
 
         $this->assertNull(Reservation::find($reservation->id));
     }
@@ -225,5 +298,23 @@ class PaymentTest extends TestCase
         $this->actingAs($host)->get(route('deleteReservation', ['id' => $reservation->id]));
 
         $this->assertNull(Reservation::find($reservation->id));
+    }
+
+    public function testHostCannotConfirmAnUnpaidReservation()
+    {
+        [$reservation, $host, $guest] = $this->makeReservation();
+
+        $this->actingAs($host)->get(route('confirmReservation', ['id' => $reservation->id]));
+
+        $this->assertSame(0, $reservation->fresh()->status);
+    }
+
+    public function testHostCanConfirmAPaidReservation()
+    {
+        [$reservation, $host, $guest] = $this->makeReservation(['paid_at' => now()]);
+
+        $this->actingAs($host)->get(route('confirmReservation', ['id' => $reservation->id]));
+
+        $this->assertSame(1, $reservation->fresh()->status);
     }
 }

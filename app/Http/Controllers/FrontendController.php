@@ -181,6 +181,8 @@ class FrontendController extends Controller
             return redirect()->back();
         }
 
+        Cache::flush();
+
         $request->session()->flash('reviewMsg', __('Review submitted'));
         return redirect()->back();
     }

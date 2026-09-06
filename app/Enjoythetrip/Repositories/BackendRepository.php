@@ -111,8 +111,18 @@ class BackendRepository implements BackendRepositoryInterface  {
     
     
     /* L35 */
+    /* A reservation can only be confirmed once it's actually been paid for -
+       otherwise a host could confirm (and a guest could then stay in) a
+       booking nobody ever paid for, whether that's a web reservation whose
+       Stripe webhook hasn't landed yet or an AJAX/mobile one that was never
+       routed through Checkout at all. */
     public function confirmReservation(Reservation $reservation)
     {
+        if (!$reservation->paid_at)
+        {
+            return false;
+        }
+
         return $reservation->update(['status' => true]);
     }
     
