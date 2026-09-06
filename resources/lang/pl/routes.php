@@ -15,8 +15,9 @@ return [
     'profile' => 'profil',
     'saveroom' => 'zapiszpokoj',
     'deleteobject' => 'usunobiekt', 
-    'deleteroom' => 'usunpokoj', 
-    
-    
+    'deleteroom' => 'usunpokoj',
+    'review' => 'recenzja',
+
+
 ];
 

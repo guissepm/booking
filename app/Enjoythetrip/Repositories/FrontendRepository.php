@@ -3,7 +3,7 @@
 namespace App\Enjoythetrip\Repositories; 
 
 use App\Enjoythetrip\Interfaces\FrontendRepositoryInterface;
-use App\{TouristObject,City,Room,Reservation,Article,User,Comment,};
+use App\{TouristObject,City,Room,Reservation,Article,User,Comment,Review,};
 use Illuminate\Support\Facades\DB;
 
 /* The Frontend repository file has the name implase will respible for communication with the database for the visible part of the application for user that are logued in L12 */
@@ -23,7 +23,7 @@ class FrontendRepository  implements FrontendRepositoryInterface  {
         //return TouristObject::find($id); 
         
         // rooms.object.city   for json mobile because there is no lazy loading there
-        return  TouristObject::with(['city','photos', 'address','users.photos','rooms.photos','comments.user','articles.user','rooms.object.city'])->find($id); 
+        return  TouristObject::with(['city','photos', 'address','users.photos','rooms.photos','comments.user','articles.user','rooms.object.city','rooms.reservations.reviews.author'])->find($id);
     }
     
     
@@ -149,8 +149,60 @@ class FrontendRepository  implements FrontendRepositoryInterface  {
             ->exists();
     }
 
+    /* Either party to a completed, confirmed reservation (the guest or the
+       host) can leave one review about the other. Returns null - instead of
+       throwing - on any rule violation (not a party to it, stay not over
+       yet, already reviewed), so the controller can show a plain message
+       the same way it does for an unavailable room. */
+    public function addReview($reservation_id, $request)
+    {
+        return DB::transaction(function () use ($reservation_id, $request) {
+            $reservation = Reservation::with('room.object')
+                ->where('id', $reservation_id)
+                ->lockForUpdate()
+                ->first();
 
-  
+            if (!$reservation) {
+                return null;
+            }
+
+            $authorId = $request->user()->id;
+            $hostId = $reservation->room->object->user_id;
+
+            if ($authorId == $reservation->user_id) {
+                $recipientId = $hostId;
+            } elseif ($authorId == $hostId) {
+                $recipientId = $reservation->user_id;
+            } else {
+                return null;
+            }
+
+            $stayIsOver = $reservation->status == 1
+                && $reservation->day_out < date('Y-m-d');
+
+            if (!$stayIsOver) {
+                return null;
+            }
+
+            $alreadyReviewed = Review::where('reservation_id', $reservation_id)
+                ->where('author_id', $authorId)
+                ->exists();
+
+            if ($alreadyReviewed) {
+                return null;
+            }
+
+            $review = new Review;
+            $review->reservation_id = $reservation_id;
+            $review->author_id = $authorId;
+            $review->recipient_id = $recipientId;
+            $review->rating = $request->input('rating');
+            $review->content = $request->input('content');
+            $review->save();
+
+            return $review;
+        });
+    }
 }
 
 

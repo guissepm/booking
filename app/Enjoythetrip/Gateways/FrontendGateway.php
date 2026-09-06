@@ -120,8 +120,16 @@ class FrontendGateway {
 
         return $this->fR->makeReservation($room_id, $city_id, $request);
     }
-    
-    
+
+    public function addReview($reservation_id, $request)
+    {
+        $this->validate($request,[
+            'content'=>"required|string",
+            'rating'=>"required|integer|between:1,5",
+        ]);
+
+        return $this->fR->addReview($reservation_id, $request);
+    }
 }
 
 

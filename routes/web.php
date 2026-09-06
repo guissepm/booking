@@ -32,6 +32,7 @@ Route::get('/unlike/{likeable_id}/{type}', 'FrontendController@unlike')->name('u
 
 Route::post('/addComment/{commentable_id}/{type}', 'FrontendController@addComment')->name('addComment'); /* Lecture 25 */
 Route::post('/makeReservation/{room_id}/{city_id}', 'FrontendController@makeReservation')->name('makeReservation'); /* Lecture 26 */
+Route::post(trans('routes.review').'/{reservation_id}', 'FrontendController@addReview')->name('addReview');
 
  
 //for json mobile

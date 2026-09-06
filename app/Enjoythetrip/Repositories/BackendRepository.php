@@ -19,7 +19,8 @@ class BackendRepository implements BackendRepositoryInterface  {
                         $q->has('reservations'); // works like where clause for Room
                     }, // give me rooms only with reservations, if it wasn't there would be rooms without reservations
 
-                    'rooms.reservations.user'
+                    'rooms.reservations.user',
+                    'rooms.reservations.reviews.author'
 
                   ])
                     ->has('rooms.reservations') // ensures that it gives me only those objects that have at least one reservation, has() here works like where clause for Object
@@ -46,7 +47,8 @@ class BackendRepository implements BackendRepositoryInterface  {
                         });
                     },
                     
-                    'rooms.reservations.user'
+                    'rooms.reservations.user',
+                    'rooms.reservations.reviews.author'
 
                   ])
 

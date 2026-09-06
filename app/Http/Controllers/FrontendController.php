@@ -18,7 +18,7 @@ class FrontendController extends Controller
     public function __construct(FrontendRepositoryInterface $frontendRepository, FrontendGateway $frontendGateway)
     {
         /* L24,60*/
-        $this->middleware($this->setMiddleware())->only(['makeReservation','addComment','like','unlike']); 
+        $this->middleware($this->setMiddleware())->only(['makeReservation','addComment','like','unlike','addReview']);
 
         $this->fR = $frontendRepository;
         $this->fG = $frontendGateway; 
@@ -167,8 +167,20 @@ class FrontendController extends Controller
         }
 
     }
-    
-    
+
+    public function addReview($reservation_id, Request $request)
+    {
+        $review = $this->fG->addReview($reservation_id, $request);
+
+        if (!$review)
+        {
+            $request->session()->flash('reviewMsg', __('This reservation cannot be reviewed'));
+            return redirect()->back();
+        }
+
+        $request->session()->flash('reviewMsg', __('Review submitted'));
+        return redirect()->back();
+    }
 }
 
  

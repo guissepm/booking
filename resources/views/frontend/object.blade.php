@@ -85,6 +85,27 @@
 
     </section>
 
+    @php
+        $stayReviews = $object->rooms
+            ->flatMap->reservations
+            ->flatMap->reviews
+            ->where('recipient_id', $object->user_id);
+    @endphp
+    @if ($stayReviews->isNotEmpty())
+    <section>
+        <h2 class="green">Guest reviews</h2>
+        @foreach ($stayReviews as $review)
+            <div class="media">
+                <div class="media-body">
+                    <strong>{{ $review->author->name }}</strong> &mdash; {{ $review->rating }}/5
+                    <p>{{ $review->content }}</p>
+                </div>
+            </div>
+            <hr>
+        @endforeach
+    </section>
+    @endif
+
     <section>
         <h2 class="green">Object comments</h2>
         @foreach( $object->comments as $comment ) <!-- Lecture 16 -->
@@ -117,7 +138,7 @@
         <div class="well">
 
 
-            <form method="POST" action="{{ route('addComment',['object_id'=>$object->id, 'App\TouristObject'])/* Lecture 25 */ }}" class="form-horizontal">
+            <form method="POST" action="{{ route('addComment',['commentable_id'=>$object->id, 'App\TouristObject'])/* Lecture 25 */ }}" class="form-horizontal">
                 <fieldset>
                     <div class="form-group">
                         <label for="textArea" class="col-lg-2 control-label">Comment</label>
@@ -169,9 +190,9 @@
     @auth
     
         @if( $object->isLiked() )
-       <a href="{{ route('unlike',['id'=>$object->id,'type'=>'App\TouristObject']) }}" class="btn btn-primary btn-xs top-buffer">Unlike this object</a>
+       <a href="{{ route('unlike',['likeable_id'=>$object->id,'type'=>'App\TouristObject']) }}" class="btn btn-primary btn-xs top-buffer">Unlike this object</a>
         @else
-       <a href="{{ route('like',['id'=>$object->id,'type'=>'App\TouristObject']) }}" class="btn btn-primary btn-xs top-buffer">Like this object</a>
+       <a href="{{ route('like',['likeable_id'=>$object->id,'type'=>'App\TouristObject']) }}" class="btn btn-primary btn-xs top-buffer">Like this object</a>
         @endif 
     
     @else

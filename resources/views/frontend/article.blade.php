@@ -49,9 +49,9 @@
     @auth
     
         @if( $article->isLiked() )
-       <a href="{{ route('unlike',['id'=>$article->id,'type'=>'App\Article']) }}" class="btn btn-primary btn-xs top-buffer">Unlike this article</a>
+       <a href="{{ route('unlike',['likeable_id'=>$article->id,'type'=>'App\Article']) }}" class="btn btn-primary btn-xs top-buffer">Unlike this article</a>
         @else
-       <a href="{{ route('like',['id'=>$article->id,'type'=>'App\Article']) }}" class="btn btn-primary btn-xs top-buffer">Like this article</a>
+       <a href="{{ route('like',['likeable_id'=>$article->id,'type'=>'App\Article']) }}" class="btn btn-primary btn-xs top-buffer">Like this article</a>
         @endif 
     
     @else
@@ -77,7 +77,7 @@
         <div class="well">
 
 
-            <form method="POST" action="{{ route('addComment',['article_id'=>$article->id, 'App\Article']) /* Lecture 25 */ }}" class="form-horizontal">
+            <form method="POST" action="{{ route('addComment',['commentable_id'=>$article->id, 'App\Article']) /* Lecture 25 */ }}" class="form-horizontal">
                 <fieldset>
 
                     <div class="form-group">
