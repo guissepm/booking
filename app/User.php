@@ -2,12 +2,14 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /* L27,59 */
 class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubject
 {
+    use HasFactory;
     use Notifiable;
     use Enjoythetrip\Presenters\UserPresenter;
 

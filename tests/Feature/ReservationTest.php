@@ -16,7 +16,7 @@ class ReservationTest extends TestCase
 
     private function makeRoom()
     {
-        $owner = factory(User::class)->create();
+        $owner = User::factory()->create();
         $city = City::create(['name' => 'Testville']);
 
         $object = new TouristObject();
@@ -40,7 +40,7 @@ class ReservationTest extends TestCase
     public function testAuthenticatedUserCanBookAnAvailableRoom()
     {
         [$room, $city] = $this->makeRoom();
-        $tourist = factory(User::class)->create();
+        $tourist = User::factory()->create();
 
         $response = $this->actingAs($tourist)->post(route('makeReservation', ['room_id' => $room->id, 'city_id' => $city->id]), [
             'checkin' => now()->addDays(5)->format('Y-m-d'),
@@ -54,8 +54,8 @@ class ReservationTest extends TestCase
     public function testOverlappingDatesAreRejected()
     {
         [$room, $city] = $this->makeRoom();
-        $firstTourist = factory(User::class)->create();
-        $secondTourist = factory(User::class)->create();
+        $firstTourist = User::factory()->create();
+        $secondTourist = User::factory()->create();
 
         $this->actingAs($firstTourist)->post(route('makeReservation', ['room_id' => $room->id, 'city_id' => $city->id]), [
             'checkin' => now()->addDays(5)->format('Y-m-d'),
@@ -74,7 +74,7 @@ class ReservationTest extends TestCase
     public function testCheckoutBeforeCheckinIsRejected()
     {
         [$room, $city] = $this->makeRoom();
-        $tourist = factory(User::class)->create();
+        $tourist = User::factory()->create();
 
         $response = $this->actingAs($tourist)->post(route('makeReservation', ['room_id' => $room->id, 'city_id' => $city->id]), [
             'checkin' => now()->addDays(5)->format('Y-m-d'),
