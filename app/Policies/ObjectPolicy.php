@@ -2,9 +2,8 @@
 
 namespace App\Policies;
 
-use App\User;
+use App\{User,TouristObject};
 use Illuminate\Auth\Access\HandlesAuthorization;
-use App\{User,TouristObject}; 
 
 /* Lecture 43 */
 class ObjectPolicy

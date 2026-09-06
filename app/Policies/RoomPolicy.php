@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\User;
+use App\{User,Room};
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 /* L47 */
@@ -20,5 +20,8 @@ class RoomPolicy
         //
     }
 
-    'App\Room' => 'App\Policies\RoomPolicy' 
+    public function checkOwner(User $user, Room $room)
+    {
+        return $user->id === $room->object->user_id;
+    }
 }

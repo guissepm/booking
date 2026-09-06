@@ -185,7 +185,12 @@ class BackendGateway {
 
         $memcache = new \Memcached();
 
-        $memcache->addServer('localhost', 11211) or die("Could not connect");
+        $server = config('cache.stores.memcached.servers.0');
+
+        if (!$memcache->addServer($server['host'], $server['port']))
+        {
+            throw new \RuntimeException('Could not connect to Memcached');
+        }
 
         $currentmodif = (int) $memcache->get('userid_' . $request->user()->id . '_notification_timestamp');
 
@@ -205,7 +210,7 @@ class BackendGateway {
             }
 
 
-            sleep(0.1);
+            usleep(100000);
             $currentmodif = (int) $memcache->get('userid_' . $request->user()->id . '_notification_timestamp');
         }
         

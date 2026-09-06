@@ -103,56 +103,21 @@ class FrontendGateway {
     public function addComment($commentable_id, $type, $request)
     {
         $this->validate($request,[
-            'content'=>"required|string"
+            'content'=>"required|string",
+            'rating'=>"nullable|integer|between:1,5",
         ]);
-        
+
         return $this->fR->addComment($commentable_id, $type, $request);
     }
 
     /* L26 */
-    public function checkAvaiableReservations($room_id, $request)
-    {
-
-        $dayin = date('Y-m-d', strtotime($request->input('checkin')));
-        $dayout = date('Y-m-d', strtotime($request->input('checkout')));
-
-        $reservations = $this->fR->getReservationsByRoomId($room_id);
-
-        $avaiable = true;
-        foreach($reservations as $reservation)
-        {
-            if( $dayin >= $reservation->day_in
-                &&  $dayin <= $reservation->day_out
-            )
-            {
-                $avaiable = false;break;
-            }
-            elseif( $dayout >= $reservation->day_in
-                &&  $dayout <= $reservation->day_out
-            )
-            {
-                $avaiable = false;break;
-            }
-            elseif( $dayin <= $reservation->day_in
-                &&  $dayout >= $reservation->day_out
-            )
-            {
-                $avaiable = false;break;
-            }
-        }
-
-        return $avaiable;
-    }
-    
-    
-    /* L26 */
     public function makeReservation($room_id, $city_id, $request)
     {
         $this->validate($request,[
-            'checkin'=>"required|string",
-            'checkout'=>"required|string"
+            'checkin'=>"required|date|after_or_equal:today",
+            'checkout'=>"required|date|after:checkin",
         ]);
-        
+
         return $this->fR->makeReservation($room_id, $city_id, $request);
     }
     

@@ -31,7 +31,9 @@ class Photo extends Model
     /* L43 */
     public static function imageRules($request,$type)
     {
-        for ( $i = 0; $i <= count($request->file($type))-1 ; $i++ ) 
+        $rules = [];
+
+        foreach ($request->file($type) ?? [] as $i => $file)
         {
             $rules["$type.$i"] = 'image|max:4000';
         }

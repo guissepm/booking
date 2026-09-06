@@ -80,8 +80,7 @@ class FrontendController extends Controller
     
         if($city = $this->fG->getSearchResults($request))
         {
-            dd($city);
-            return $this->makeResponse('frontend.roomsearch',compact('city')); 
+            return $this->makeResponse('frontend.roomsearch',compact('city'));
         }
         else 
         {
@@ -145,31 +144,28 @@ class FrontendController extends Controller
     /* L26 */
     public function makeReservation($room_id, $city_id, Request $request)
     {
-        
-        $avaiable = $this->fG->checkAvaiableReservations($room_id, $request);
-        
-        if(!$avaiable)
+        $reservation = $this->fG->makeReservation($room_id, $city_id, $request);
+
+        if (!$reservation)
         {
             if (!$request->ajax())
             {
                 $request->session()->flash('reservationMsg', __('There are no vacancies'));
-                return redirect()->route('room',['id'=>$room_id,'#reservation']); 
+                return redirect()->route('room',['id'=>$room_id,'#reservation']);
             }
-            
+
             return response()->json(['reservation'=>false]);
         }
         else
-        {     
-            $reservation = $this->fG->makeReservation($room_id, $city_id, $request);
-            
+        {
             event( new OrderPlacedEvent($reservation) ); /* L54 */
-            
+
             if (!$request->ajax())
-            return redirect()->route('adminHome'); 
+            return redirect()->route('adminHome');
             else
             return response()->json(['reservation'=>$reservation]);
         }
- 
+
     }
     
     

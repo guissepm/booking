@@ -30,7 +30,7 @@
                         <img class="img-responsive" src="{{ $object->photos->first()->path ?? $placeholder /* Lecture 44 $placeholder */ }}" alt="..."> <!-- Lecture 14 src -->
                         <div class="caption">
                             <h3>{{ $object->name }} <!-- Lecture 14 -->  <small>{{ $object->city->name  }}<!-- Lecture 14 --></small> </h3>
-                            <p>{{ str_limit($object->description,100) }}<!-- Lecture 14 --></p>
+                            <p>{{ \Illuminate\Support\Str::limit($object->description,100) }}<!-- Lecture 14 --></p>
                             <p><a href="{{ route('object',['id'=>$object->id]) }}" class="btn btn-primary" role="button">Details</a></p> <!-- Lecture 15 ['id'=>$object->id] -->
                         </div>
                     </div>

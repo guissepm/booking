@@ -61,7 +61,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'CheckOwner' => \App\Http\Middleware\CheckOwner::class, /* L36 */
         'CheckAdmin' => \App\Http\Middleware\CheckAdmin::class, /* L37 */
-        'jwt.auth' => \Tymon\JWTAuth\Middleware\GetUserFromToken::class, /* L58 */
-        'jwt.refresh' => \TymonJWTAuth\Middleware\RefreshToken::class /* L58 */
+        'jwt.auth' => \Tymon\JWTAuth\Http\Middleware\Authenticate::class, /* L58 */
+        'jwt.refresh' => \Tymon\JWTAuth\Http\Middleware\RefreshToken::class /* L58 */
     ];
 }

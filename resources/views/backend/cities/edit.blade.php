@@ -14,7 +14,7 @@
 <input class="form-control" value="{{ $city->name }}" type="text" required name="name"><br>
 <button class="btn btn-primary" type="submit">Save</button>  
 {{ csrf_field()  }}
-{{ method_field('PUT') }}
+@method('PUT')
 </form>
 
 @endsection
