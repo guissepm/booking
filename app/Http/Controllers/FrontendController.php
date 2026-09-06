@@ -158,11 +158,14 @@ class FrontendController extends Controller
         }
         else
         {
-            event( new OrderPlacedEvent($reservation) ); /* L54 */
-
             if (!$request->ajax())
-            return redirect()->route('adminHome');
-            else
+            return redirect()->route('checkout', ['reservation_id' => $reservation->id]);
+
+            // Mobile/AJAX clients aren't wired up to the Stripe Checkout
+            // redirect flow below, so preserve the previous behaviour for
+            // them: the reservation is created unpaid and the host is
+            // notified immediately, same as before payment existed.
+            event( new OrderPlacedEvent($reservation) ); /* L54 */
             return response()->json(['reservation'=>$reservation]);
         }
 

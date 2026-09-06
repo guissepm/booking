@@ -3,11 +3,20 @@
 namespace App\Enjoythetrip\Repositories; 
 
 use App\Enjoythetrip\Interfaces\BackendRepositoryInterface;
+use App\Enjoythetrip\Payments\StripeGateway;
 use App\{TouristObject,Reservation,City,User,Photo,Address,Article,Room,Notification};
 use Illuminate\Support\Facades\Auth;
 
 /* Lecture 27 */
-class BackendRepository implements BackendRepositoryInterface  {   
+class BackendRepository implements BackendRepositoryInterface  {
+
+    private $stripe;
+
+    public function __construct(StripeGateway $stripe)
+    {
+        $this->stripe = $stripe;
+    }
+
     
     
     /* Lecture 28 */
@@ -92,6 +101,11 @@ class BackendRepository implements BackendRepositoryInterface  {
     /* L35 */
     public function deleteReservation(Reservation $reservation)
     {
+        if ($reservation->paid_at)
+        {
+            $this->stripe->refund($reservation->stripe_payment_intent_id);
+        }
+
         return $reservation->delete();
     }
     

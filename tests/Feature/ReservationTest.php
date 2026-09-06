@@ -47,7 +47,8 @@ class ReservationTest extends TestCase
             'checkout' => now()->addDays(8)->format('Y-m-d'),
         ]);
 
-        $response->assertRedirect(route('adminHome'));
+        $reservation = Reservation::where('room_id', $room->id)->first();
+        $response->assertRedirect(route('checkout', ['reservation_id' => $reservation->id]));
         $this->assertSame(1, Reservation::where('room_id', $room->id)->count());
     }
 

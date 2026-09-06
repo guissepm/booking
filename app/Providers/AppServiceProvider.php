@@ -69,9 +69,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         /* L27 */
-        $this->app->bind(\App\Enjoythetrip\Interfaces\BackendRepositoryInterface::class,function()
-        {            
-            return new \App\Enjoythetrip\Repositories\BackendRepository;
+        $this->app->bind(\App\Enjoythetrip\Interfaces\BackendRepositoryInterface::class,function($app)
+        {
+            return $app->make(\App\Enjoythetrip\Repositories\BackendRepository::class);
         });
     }
 }

@@ -39,6 +39,11 @@ Route::get(trans('routes.inbox'), 'FrontendController@inbox')->name('inbox');
 Route::get(trans('routes.messages').'/{conversation_id}', 'FrontendController@showConversation')->name('showConversation');
 Route::post(trans('routes.messages').'/{conversation_id}', 'FrontendController@postMessage')->name('postMessage');
 
+Route::get('/checkout/{reservation_id}', 'PaymentController@checkout')->name('checkout');
+Route::get('/checkout/{reservation_id}/success', 'PaymentController@success')->name('checkoutSuccess');
+Route::get('/checkout/{reservation_id}/cancel', 'PaymentController@cancel')->name('checkoutCancel');
+Route::post('/stripe/webhook', 'PaymentController@webhook')->name('stripeWebhook');
+
  
 //for json mobile
 Route::get('/cities', 'FrontendController@cities'); /* Lecture 60 */

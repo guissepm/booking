@@ -128,6 +128,8 @@ class FrontendRepository  implements FrontendRepositoryInterface  {
                 return null;
             }
 
+            $nights = (strtotime($dayout) - strtotime($dayin)) / 86400;
+
             return Reservation::create([
                 'user_id'=>$request->user()->id,
                 'city_id'=>$city_id,
@@ -135,6 +137,7 @@ class FrontendRepository  implements FrontendRepositoryInterface  {
                 'status'=>0,
                 'day_in'=>$dayin,
                 'day_out'=>$dayout,
+                'amount_cents'=>$room->price * $nights * 100,
             ]);
         });
     }
