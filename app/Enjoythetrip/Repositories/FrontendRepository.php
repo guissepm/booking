@@ -2,8 +2,9 @@
 
 namespace App\Enjoythetrip\Repositories; 
 
-use App\Enjoythetrip\Interfaces\FrontendRepositoryInterface; 
-use App\{TouristObject,City,Room,Reservation,Article,User,Comment,}; 
+use App\Enjoythetrip\Interfaces\FrontendRepositoryInterface;
+use App\{TouristObject,City,Room,Reservation,Article,User,Comment,};
+use Illuminate\Support\Facades\DB;
 
 /* The Frontend repository file has the name implase will respible for communication with the database for the visible part of the application for user that are logued in L12 */
 class FrontendRepository  implements FrontendRepositoryInterface  {  
@@ -114,14 +115,38 @@ class FrontendRepository  implements FrontendRepositoryInterface  {
     /* L26 */
     public function makeReservation($room_id, $city_id, $request)
     {
-        return Reservation::create([
+        $dayin = date('Y-m-d', strtotime($request->input('checkin')));
+        $dayout = date('Y-m-d', strtotime($request->input('checkout')));
+
+        return DB::transaction(function () use ($room_id, $city_id, $request, $dayin, $dayout) {
+            // Lock the room row so concurrent booking attempts for it serialize:
+            // whoever gets the lock first checks for overlaps and inserts before
+            // the next attempt is allowed to read the (now up to date) reservations.
+            $room = Room::where('id', $room_id)->lockForUpdate()->first();
+
+            if (!$room || $this->roomHasOverlap($room_id, $dayin, $dayout)) {
+                return null;
+            }
+
+            return Reservation::create([
                 'user_id'=>$request->user()->id,
                 'city_id'=>$city_id,
                 'room_id'=>$room_id,
                 'status'=>0,
-                'day_in'=>date('Y-m-d', strtotime($request->input('checkin'))),
-                'day_out'=>date('Y-m-d', strtotime($request->input('checkout')))
+                'day_in'=>$dayin,
+                'day_out'=>$dayout,
             ]);
+        });
+    }
+
+    /* Overlap check done in SQL, inside the locked transaction above, so it
+       sees any reservation committed by a concurrent request for this room. */
+    private function roomHasOverlap($room_id, $dayin, $dayout)
+    {
+        return Reservation::where('room_id', $room_id)
+            ->where('day_in', '<=', $dayout)
+            ->where('day_out', '>=', $dayin)
+            ->exists();
     }
 
 
