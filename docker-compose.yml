@@ -36,6 +36,9 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME:-null}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
       MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-null}
+      STRIPE_KEY: ${STRIPE_KEY:-}
+      STRIPE_SECRET: ${STRIPE_SECRET:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
     volumes:
       - storage:/var/www/html/storage
     depends_on:
