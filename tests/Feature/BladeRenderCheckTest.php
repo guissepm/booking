@@ -38,6 +38,9 @@ class BladeRenderCheckTest extends TestCase
 
         $response = $this->get(route('object', ['id' => $object->id]));
         $response->assertStatus(200);
+
+        $guest = User::factory()->create();
+        $this->actingAs($guest)->get(route('object', ['id' => $object->id]))->assertStatus(200);
     }
 
     public function testAdminHomeRendersWithPastStaysSection()

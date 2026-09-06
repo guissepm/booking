@@ -21,6 +21,8 @@ return [
     'deleteobject' => 'deleteobject', 
     'deleteroom' => 'deleteroom',
     'review' => 'review',
+    'inbox' => 'inbox',
+    'messages' => 'messages',
 
 
 ];

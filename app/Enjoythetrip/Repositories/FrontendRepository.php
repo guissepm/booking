@@ -3,7 +3,7 @@
 namespace App\Enjoythetrip\Repositories; 
 
 use App\Enjoythetrip\Interfaces\FrontendRepositoryInterface;
-use App\{TouristObject,City,Room,Reservation,Article,User,Comment,Review,};
+use App\{TouristObject,City,Room,Reservation,Article,User,Comment,Review,Conversation,Message,};
 use Illuminate\Support\Facades\DB;
 
 /* The Frontend repository file has the name implase will respible for communication with the database for the visible part of the application for user that are logued in L12 */
@@ -202,6 +202,86 @@ class FrontendRepository  implements FrontendRepositoryInterface  {
 
             return $review;
         });
+    }
+
+    /* Finds or creates the (object, guest) thread and posts the first
+       message into it. Returns null if the object doesn't exist or the
+       caller is the object's own owner (messaging yourself makes no
+       sense here). */
+    public function startConversation($object_id, $request)
+    {
+        $object = TouristObject::find($object_id);
+        $guestId = $request->user()->id;
+
+        if (!$object || $object->user_id == $guestId) {
+            return null;
+        }
+
+        $conversation = Conversation::firstOrCreate([
+            'object_id' => $object_id,
+            'guest_id' => $guestId,
+        ]);
+
+        $conversation->messages()->create([
+            'sender_id' => $guestId,
+            'content' => $request->input('content'),
+        ]);
+
+        return $conversation;
+    }
+
+    /* Every conversation the user takes part in, either as the guest who
+       started it or as the host of the object it's about. */
+    public function getInbox($request)
+    {
+        $userId = $request->user()->id;
+
+        return Conversation::with(['object', 'guest', 'messages' => function ($q) {
+                $q->latest()->limit(1);
+            }])
+            ->where('guest_id', $userId)
+            ->orWhereHas('object', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->orderByDesc('updated_at')
+            ->get();
+    }
+
+    /* Returns null if the conversation doesn't exist or the requesting
+       user isn't one of its two participants. Marks the other party's
+       messages as read as a side effect of opening the thread. */
+    public function getConversation($conversation_id, $request)
+    {
+        $conversation = Conversation::with(['object', 'guest', 'messages.sender'])
+            ->find($conversation_id);
+
+        $userId = $request->user()->id;
+
+        if (!$conversation || !$conversation->hasParticipant($userId)) {
+            return null;
+        }
+
+        $conversation->messages()
+            ->where('sender_id', '!=', $userId)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return $conversation;
+    }
+
+    public function postMessage($conversation_id, $request)
+    {
+        $conversation = Conversation::find($conversation_id);
+        $userId = $request->user()->id;
+
+        if (!$conversation || !$conversation->hasParticipant($userId)) {
+            return null;
+        }
+
+        return $conversation->messages()->create([
+            'sender_id' => $userId,
+            'content' => $request->input('content'),
+        ]);
     }
 }
 

@@ -18,7 +18,7 @@ class FrontendController extends Controller
     public function __construct(FrontendRepositoryInterface $frontendRepository, FrontendGateway $frontendGateway)
     {
         /* L24,60*/
-        $this->middleware($this->setMiddleware())->only(['makeReservation','addComment','like','unlike','addReview']);
+        $this->middleware($this->setMiddleware())->only(['makeReservation','addComment','like','unlike','addReview','startConversation','inbox','showConversation','postMessage']);
 
         $this->fR = $frontendRepository;
         $this->fG = $frontendGateway; 
@@ -180,6 +180,50 @@ class FrontendController extends Controller
 
         $request->session()->flash('reviewMsg', __('Review submitted'));
         return redirect()->back();
+    }
+
+    public function startConversation($object_id, Request $request)
+    {
+        $conversation = $this->fG->startConversation($object_id, $request);
+
+        if (!$conversation)
+        {
+            $request->session()->flash('messageMsg', __('This message could not be sent'));
+            return redirect()->back();
+        }
+
+        return redirect()->route('showConversation', ['conversation_id' => $conversation->id]);
+    }
+
+    public function inbox(Request $request)
+    {
+        $conversations = $this->fG->getInbox($request);
+
+        return $this->makeResponse('frontend.inbox', compact('conversations'));
+    }
+
+    public function showConversation($conversation_id, Request $request)
+    {
+        $conversation = $this->fG->getConversation($conversation_id, $request);
+
+        if (!$conversation)
+        {
+            abort(404);
+        }
+
+        return $this->makeResponse('frontend.conversation', compact('conversation'));
+    }
+
+    public function postMessage($conversation_id, Request $request)
+    {
+        $message = $this->fG->postMessage($conversation_id, $request);
+
+        if (!$message)
+        {
+            abort(404);
+        }
+
+        return redirect()->route('showConversation', ['conversation_id' => $conversation_id]);
     }
 }
 

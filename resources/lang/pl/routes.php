@@ -17,6 +17,8 @@ return [
     'deleteobject' => 'usunobiekt', 
     'deleteroom' => 'usunpokoj',
     'review' => 'recenzja',
+    'inbox' => 'skrzynka',
+    'messages' => 'wiadomosci',
 
 
 ];

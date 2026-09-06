@@ -106,6 +106,27 @@
     </section>
     @endif
 
+    @auth
+        @if (Auth::id() != $object->user_id)
+        <section>
+            <a class="btn btn-primary" role="button" data-toggle="collapse" href="#messageHostForm" aria-expanded="false" aria-controls="messageHostForm">
+                Message host
+            </a>
+            <div class="collapse" id="messageHostForm">
+                <div class="well">
+                    <form method="POST" action="{{ route('startConversation', ['object_id' => $object->id]) }}">
+                        @csrf
+                        <div class="form-group">
+                            <textarea name="content" class="form-control" placeholder="Ask the host a question" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+        @endif
+    @endauth
+
     <section>
         <h2 class="green">Object comments</h2>
         @foreach( $object->comments as $comment ) <!-- Lecture 16 -->

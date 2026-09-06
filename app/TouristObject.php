@@ -55,6 +55,11 @@ class TouristObject extends Model
     {
         return $this->hasMany('App\Room','object_id');
     }
+
+    public function conversations()
+    {
+        return $this->hasMany('App\Conversation','object_id');
+    }
     
     /* Touriste object has many comments, its a on to many polymorphique relationship because many objects vane use comment from only one table 16 */
     public function comments()

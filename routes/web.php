@@ -34,6 +34,11 @@ Route::post('/addComment/{commentable_id}/{type}', 'FrontendController@addCommen
 Route::post('/makeReservation/{room_id}/{city_id}', 'FrontendController@makeReservation')->name('makeReservation'); /* Lecture 26 */
 Route::post(trans('routes.review').'/{reservation_id}', 'FrontendController@addReview')->name('addReview');
 
+Route::post(trans('routes.object').'/{object_id}/'.trans('routes.messages'), 'FrontendController@startConversation')->name('startConversation');
+Route::get(trans('routes.inbox'), 'FrontendController@inbox')->name('inbox');
+Route::get(trans('routes.messages').'/{conversation_id}', 'FrontendController@showConversation')->name('showConversation');
+Route::post(trans('routes.messages').'/{conversation_id}', 'FrontendController@postMessage')->name('postMessage');
+
  
 //for json mobile
 Route::get('/cities', 'FrontendController@cities'); /* Lecture 60 */
