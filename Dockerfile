@@ -1,64 +1,33 @@
-# Enjoythetrip runs on Laravel 5.6 / PHP ^7.1.3 (see composer.json). This
-# image intentionally targets an old PHP 7.x to match that requirement
-# rather than the newer PHP available on the host. 7.3 rather than 7.1:
-# the code itself uses a trailing comma in a group `use` statement
-# (app/Enjoythetrip/Repositories/FrontendRepository.php), only valid
-# since PHP 7.2 — composer.json's declared floor doesn't actually match
-# what the source needs to parse. 7.3 still satisfies composer.json's
-# ^7.1.3 constraint.
+# Enjoythetrip runs on Laravel 9 / PHP ^8.0.2 (see composer.json).
 
 # ---- Stage 1: install PHP dependencies with Composer -----------------------
-# Composer 2 rewrote vendor/composer/installed.json to a new schema that
-# Laravel 5.6's PackageManifest can't parse ("Undefined index: name" at
-# runtime, same issue fixed for CI in .github/workflows/laravel.yml), so we
-# need Composer 1. The docker.io/library/composer:1 image turned out to
-# bundle a modern PHP (8.4) that Composer 1's own code doesn't support
-# (fatal TypeError in stream_context_create()), so install Composer 1
-# ourselves on a PHP version it actually works with instead.
-FROM php:7.3-cli AS vendor
+FROM php:8.2-cli AS vendor
 
-RUN sed -i \
-        -e 's|deb.debian.org|archive.debian.org|g' \
-        -e '/security.debian.org/d' \
-        /etc/apt/sources.list \
-    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until \
-    && apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         unzip \
         libzip-dev \
     && docker-php-ext-install zip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
-    && php composer-setup.php --version=1.10.27 --install-dir=/usr/local/bin --filename=composer \
-    && php -r "unlink('composer-setup.php');"
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
 COPY . .
 
 # Dev dependencies are kept (no --no-dev): database/seeds/*.php (the
-# demo data every seeder relies on) requires fzaninotto/faker, which is
+# demo data every seeder relies on) requires fakerphp/faker, which is
 # only declared in require-dev. This is a local/demo image, not a
 # hardened production build.
 RUN composer install \
         --optimize-autoloader \
-        --ignore-platform-reqs \
         --prefer-dist \
         --no-interaction \
         --no-scripts
 
 # ---- Stage 2: runtime image (php-fpm + nginx in a single container) --------
-FROM php:7.3-fpm
-
-# This Debian release is EOL; its main mirrors are gone, so point apt at
-# the archive (and stop requiring a live Release "Valid-Until", which
-# archived snapshots don't refresh).
-RUN sed -i \
-        -e 's|deb.debian.org|archive.debian.org|g' \
-        -e '/security.debian.org/d' \
-        /etc/apt/sources.list \
-    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until
+FROM php:8.2-fpm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         nginx \
@@ -70,9 +39,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         zlib1g-dev \
         unzip \
         default-mysql-client \
-    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
-    && pecl install memcached-3.1.5 \
+    && pecl install memcached \
     && docker-php-ext-enable memcached \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/* \
